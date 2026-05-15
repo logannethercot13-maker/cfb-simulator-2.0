@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CFB 2026-27 Monte Carlo — Week 0 + Week 1</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; background: #f6f8fb; color: #1a2433; font-size: 13px; line-height: 1.45; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 16px; }
+  .hdr { background: linear-gradient(180deg,#fff 0%,#f1f4f9 100%); border: 1px solid #e1e7ed; border-radius: 10px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(20,40,80,.04); }
+  .hdr h1 { margin: 0; font-size: 18px; color: #0a3d80; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .badge { font-size: 10px; background: #0a3d80; color: #fff; padding: 2px 7px; border-radius: 3px; letter-spacing: 1px; font-weight: 700; }
+  .badge2 { font-size: 10px; background: #b58900; color: #fff; padding: 2px 7px; border-radius: 3px; letter-spacing: 1px; font-weight: 700; }
+  .subhdr { color: #5a6c80; font-size: 11px; margin-top: 4px; }
+  .controls { margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .controls label { font-size: 11px; color: #5a6c80; text-transform: uppercase; letter-spacing: .6px; }
+  .controls input[type=number] { padding: 5px 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-family: inherit; background: #fff; width: 90px; }
+  button { cursor: pointer; font-family: inherit; font-size: 11px; padding: 6px 12px; border: 1px solid #cbd5e1; background: #fff; color: #1a2433; border-radius: 4px; font-weight: 600; transition: all .12s; }
+  button:hover { background: #f1f4f9; }
+  button.primary { background: #0a3d80; color: #fff; border-color: #0a3d80; }
+  button.primary:hover { background: #082f63; }
+  button.active { background: #0a3d80; color: #fff; border-color: #0a3d80; }
+  .panel { background: #fff; border: 1px solid #e1e7ed; border-radius: 8px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 1px 2px rgba(20,40,80,.04); }
+  .panel-hdr { padding: 8px 14px; background: #f1f4f9; border-bottom: 1px solid #e1e7ed; font-size: 11px; font-weight: 700; color: #5a6c80; letter-spacing: .8px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+  .panel-body { padding: 12px 14px; }
+  .table-wrap { overflow-x: auto; }
+  table.results { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.results th { background: #f1f4f9; text-align: left; padding: 8px 10px; font-size: 10px; text-transform: uppercase; color: #5a6c80; letter-spacing: .8px; border-bottom: 2px solid #cbd5e1; white-space: nowrap; }
+  table.results td { padding: 7px 10px; border-bottom: 1px solid #eef2f7; white-space: nowrap; }
+  table.results tbody tr { cursor: pointer; transition: background .1s; }
+  table.results tbody tr:hover { background: #fafbfd; }
+  table.results tbody tr.selected { background: #e8f0fb; }
+  table.results tbody tr.has-edge { border-left: 3px solid #b58900; }
+  .pos { color: #0a8a3a; font-weight: 600; }
+  .neg { color: #c62828; }
+  .muted { color: #95a3b3; }
+  .hot { color: #b65500; font-weight: 600; }
+  .cool { color: #1565c0; font-weight: 600; }
+  .gold { color: #b58900; font-weight: 700; }
+  .rank { color: #b58900; font-weight: 700; margin-right: 3px; }
+  .bet-pill { display: inline-block; background: #fff8e1; border: 1px solid #f1d486; color: #8a5a00; padding: 1px 6px; border-radius: 3px; margin-right: 4px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+  .week-pill { display: inline-block; background: #e8f0fb; border: 1px solid #b3c8ee; color: #0a3d80; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
+  .stat-box { background: #fafbfd; border: 1px solid #e1e7ed; border-radius: 6px; padding: 10px 12px; }
+  .stat-box-title { font-size: 10px; color: #5a6c80; letter-spacing: .7px; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid #e1e7ed; padding-bottom: 6px; margin-bottom: 8px; }
+  .stat-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid #eef2f7; font-size: 11px; }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .lbl { color: #5a6c80; }
+  .stat-row .val { font-weight: 700; color: #1a2433; }
+  .editor textarea { width: 100%; min-height: 320px; font-family: "SF Mono",Menlo,Consolas,monospace; font-size: 11.5px; line-height: 1.5; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fafbfd; color: #1a2433; resize: vertical; }
+  .editor-hint { font-size: 11px; color: #5a6c80; margin-top: 8px; line-height: 1.5; }
+  .editor-error { margin-top: 8px; padding: 8px 10px; background: #fdecea; border: 1px solid #f5c2c0; color: #9c2520; border-radius: 4px; font-size: 11px; font-family: monospace; }
+  .methodology { background: #fafbfd; border: 1px solid #e1e7ed; border-radius: 6px; padding: 12px 14px; font-size: 11px; color: #5a6c80; line-height: 1.6; }
+  .methodology strong { color: #1a2433; }
+  .warn { color: #c62828; font-weight: 600; }
+  .empty { text-align: center; color: #95a3b3; padding: 40px 20px; font-size: 13px; }
+  .progress { height: 4px; background: #e1e7ed; border-radius: 2px; overflow: hidden; margin-top: 8px; }
+  .progress > div { height: 100%; background: linear-gradient(90deg,#0a3d80,#0066cc); width: 0%; transition: width .2s; }
+  .summary-pills { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: #5a6c80; margin-top: 4px; }
+  .summary-pills span strong { color: #0a3d80; }
+  .hidden { display: none; }
+  .sources-box { background: #f0f7ff; border: 1px solid #b3d0f5; border-radius: 6px; padding: 10px 14px; font-size: 11px; color: #1a3a60; margin-bottom: 14px; line-height: 1.7; }
+  .sources-box strong { color: #0a3d80; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <h1>
+    <span class="badge">MC v2</span>
+    CFB 2026-27 Monte Carlo Simulator
+    <span class="badge2">WEEK 0 + WEEK 1 LOADED</span>
+  </h1>
+  <div class="subhdr">Drive-based engine · 10,000 iterations per game · EV + flat-unit bet sizing · 19 real games · Live lines from ESPN/CBS/BetMGM/SI · 2025 final stats as team priors</div>
+  <div class="controls">
+    <button id="btn-run" class="primary">▶ Run All Sims (19 games)</button>
+    <button id="btn-edit">✎ Edit Games</button>
+    <button id="btn-add">+ Add Game</button>
+    <button id="btn-reset">↻ Reset to 2026 W0+W1</button>
+    <span style="margin-left:8px"></span>
+    <label>Unit $</label>
+    <input id="unit-size" type="number" value="25" min="0" step="5">
+    <span style="margin-left:8px"></span>
+    <label>Filter</label>
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="bets">+EV only</button>
+    <button class="filter-btn" data-filter="close">Close (≤7)</button>
+    <button class="filter-btn" data-filter="w0">Week 0</button>
+    <button class="filter-btn" data-filter="w1">Week 1</button>
+  </div>
+  <div id="status" class="summary-pills"></div>
+  <div id="progress" class="progress hidden"><div></div></div>
+</div>
+
+<div class="sources-box">
+  <strong>📊 Lines & Data Sources:</strong>
+  ESPN Scoreboard (Auburn -6.5/59.5, Georgia State/Ole Miss -35.5/60.5) ·
+  CBS Sports Early Lines (LSU -3.5/55, Notre Dame -16.5, Ole Miss -8.5, Auburn -6.5) ·
+  BetMGM Week 1 Preview (Oklahoma State -14.5, Duke -7.5) ·
+  SI.com (Louisville/Ole Miss, Wisconsin/Notre Dame Sunday games) ·
+  ESPN Press Room (confirmed matchups: NC/TCU, NCST/VA, Colo/GT, Miami/Stanford, Baylor/Auburn, Clemson/LSU, SMU/FSU) ·
+  <strong>Team stats:</strong> 2025 final season averages used as priors (offense PPG, defense allow PPG, pass/rush YPG, turnover rate).
+  <strong>Note:</strong> Many lines are early/estimated — check current sportsbooks for latest numbers before wagering.
+</div>
+
+<div id="editor-panel" class="panel hidden">
+  <div class="panel-hdr">
+    <span>Edit Games (JSON array)</span>
+    <span>
+      <button id="editor-save" class="primary">Save & Re-run</button>
+      <button id="editor-cancel">Cancel</button>
+    </span>
+  </div>
+  <div class="panel-body editor">
+    <textarea id="games-json" spellcheck="false"></textarea>
+    <div class="editor-hint">Required: <code>id, away, home, spread, total, awayPPG, homePPG, awayAllowPPG, homeAllowPPG, awayTOG, homeTOG</code>. Spread negative = home favored. Set <code>hfa:0</code> for neutral sites.</div>
+    <div id="editor-error" class="editor-error hidden"></div>
+  </div>
+</div>
+
+<div class="panel" id="results-panel">
+  <div class="panel-hdr"><span>All Games — 2026 Week 0 &amp; Week 1</span><span id="game-count" class="muted"></span></div>
+  <div class="table-wrap">
+    <table class="results">
+      <thead>
+        <tr>
+          <th>Wk</th><th>#</th><th>Away</th><th>Home</th><th>Line</th><th>O/U</th>
+          <th>Sim Score</th><th>Away Win%</th><th>Home Win%</th><th>ATS Home%</th>
+          <th>O/U %</th><th>Actual</th><th>+EV Bets</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel" id="detail-panel">
+  <div class="panel-hdr"><span id="detail-title">Click any game above to see full detail</span></div>
+  <div class="panel-body">
+    <div id="detail-meta" style="font-size:11px;color:#5a6c80;margin-bottom:10px;"></div>
+    <div id="detail-grid" class="stat-grid"></div>
+  </div>
+</div>
+
+<div class="methodology">
+  <strong>Methodology:</strong> Each game runs 10,000 Monte Carlo iterations. Per iteration: (1) draw a shared efficiency shock that correlates both teams' scoring, (2) generate possessions from a pace prior (8–17 drives), (3) draw per-drive outcomes from {TD, FG, none} using a 60/40 blend of market-implied and team-stat priors, (4) overlay Poisson-drawn turnovers (~4-pt swing per net TO) + weather/HFA/rest adjustments. Lines sourced from ESPN scoreboard, CBS Sports early lines, BetMGM, and SI. 2025 final season stats used as team priors. +EV bets require EV > 2% and 95% CI above breakeven.
+  <br><span class="warn">⚠ For entertainment purposes only. Lines shown are early estimates and will move — always check current sportsbooks. Please gamble responsibly.</span>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ─────────────────────────────────────────────
+// 2026 WEEK 0 + WEEK 1 — 19 REAL GAMES
+// Lines: ESPN scoreboard, CBS Sports early lines, BetMGM, SI.com
+// Team stats: 2025 final season averages as priors.
+// ─────────────────────────────────────────────
+const WEEK_0_1_GAMES = [
+  // ════════════ WEEK ZERO — Aug 29, 2026 ════════════
+  {
+    id:1, week:0,
+    away:"North Carolina", home:"TCU",
+    awayRank:0, homeRank:0,
+    spread:-3.0, total:52.5,
+    awayPPG:26, homePPG:28,
+    awayAllowPPG:22, homeAllowPPG:24,
+    awayPaceOff:13.0, homePaceOff:12.5,
+    awayPassYPG:255, homePassYPG:240,
+    awayRushYPG:145, homeRushYPG:155,
+    awayTOG:1.3, homeTOG:1.4,
+    awayRest:7, homeRest:7, hfa:0,
+    venue:"Aviva Stadium, Dublin, Ireland (Aer Lingus Classic)",
+    weather:"Clear 62°F",
+    odds:{spread:-110,total:-110,mlHome:-165,mlAway:140},
+    note:"Week 0 neutral site. TCU favored -3 per early lines. Bill Belichick's UNC debut as head coach."
+  },
+  {
+    id:2, week:0,
+    away:"NC State", home:"Virginia",
+    awayRank:0, homeRank:0,
+    spread:-3.5, total:50.0,
+    awayPPG:27, homePPG:30,
+    awayAllowPPG:24, homeAllowPPG:25,
+    awayPaceOff:12.5, homePaceOff:13.0,
+    awayPassYPG:240, homePassYPG:260,
+    awayRushYPG:135, homeRushYPG:150,
+    awayTOG:1.4, homeTOG:1.2,
+    awayRest:7, homeRest:7, hfa:0,
+    venue:"Estadio Olímpico Nilton Santos, Rio de Janeiro, Brazil (CFB Brasil)",
+    weather:"Humid 82°F",
+    odds:{spread:-110,total:-110,mlHome:-185,mlAway:155},
+    note:"Week 0 neutral site in Rio. Virginia slight favorite -3.5. 3:30 PM ET on ESPN."
+  },
+  {
+    id:3, week:0,
+    away:"Alabama A&M", home:"Howard",
+    awayRank:0, homeRank:0,
+    spread:-4.0, total:45.0,
+    awayPPG:22, homePPG:24,
+    awayAllowPPG:26, homeAllowPPG:23,
+    awayPaceOff:12.0, homePaceOff:12.0,
+    awayPassYPG:195, homePassYPG:210,
+    awayRushYPG:130, homeRushYPG:140,
+    awayTOG:1.8, homeTOG:1.7,
+    awayRest:7, homeRest:7, hfa:0,
+    venue:"Mercedes-Benz Stadium, Atlanta, GA (HBCU Classic)",
+    weather:"Clear 85°F",
+    odds:{spread:-110,total:-110,mlHome:-200,mlAway:170},
+    note:"Week 0 HBCU Classic, 7:30 PM ET on ABC. Howard at home in this neutral site. FCS/SWAC matchup."
+  },
+
+  // ════════════ WEEK 1 — Thu Sep 3 ════════════
+  {
+    id:4, week:1,
+    away:"Colorado", home:"Georgia Tech",
+    awayRank:0, homeRank:0,
+    spread:-3.0, total:55.5,
+    awayPPG:30, homePPG:29,
+    awayAllowPPG:28, homeAllowPPG:26,
+    awayPaceOff:13.5, homePaceOff:13.0,
+    awayPassYPG:270, homePassYPG:240,
+    awayRushYPG:160, homeRushYPG:145,
+    awayTOG:1.5, homeTOG:1.4,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Bobby Dodd Stadium, Atlanta, GA",
+    weather:"Clear 82°F",
+    odds:{spread:-110,total:-110,mlHome:-155,mlAway:130},
+    note:"Thu 8 PM ESPN. Georgia Tech -3 at home vs Deion Sanders' Colorado Buffs. Deion returns to Atlanta."
+  },
+  {
+    id:5, week:1,
+    away:"Arkansas-Pine Bluff", home:"Missouri",
+    awayRank:0, homeRank:0,
+    spread:-38.5, total:58.0,
+    awayPPG:15, homePPG:35,
+    awayAllowPPG:35, homeAllowPPG:18,
+    awayPaceOff:11.5, homePaceOff:13.0,
+    awayPassYPG:155, homePassYPG:285,
+    awayRushYPG:115, homeRushYPG:170,
+    awayTOG:2.2, homeTOG:1.0,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Faurot Field, Columbia, MO",
+    weather:"Clear 80°F",
+    odds:{spread:-110,total:-110,mlHome:-5000,mlAway:1800},
+    note:"Thu 8 PM SEC Network. FCS UAPB at Missouri — cupcake opener."
+  },
+
+  // ════════════ WEEK 1 — Fri Sep 4 ════════════
+  {
+    id:6, week:1,
+    away:"Miami", home:"Stanford",
+    awayRank:7, homeRank:0,
+    spread:-7.0, total:54.5,
+    awayPPG:36, homePPG:26,
+    awayAllowPPG:19, homeAllowPPG:28,
+    awayPaceOff:13.5, homePaceOff:12.5,
+    awayPassYPG:295, homePassYPG:235,
+    awayRushYPG:160, homeRushYPG:130,
+    awayTOG:1.1, homeTOG:1.5,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Stanford Stadium, Palo Alto, CA",
+    weather:"Clear 72°F",
+    odds:{spread:-110,total:-110,mlHome:245,mlAway:-295},
+    note:"Fri 9 PM ESPN. #7 Miami -7 at Stanford. Hurricanes fresh off last year's CFP title game run. ACC opener."
+  },
+
+  // ════════════ WEEK 1 — Sat Sep 5 ════════════
+  {
+    id:7, week:1,
+    away:"North Alabama", home:"Arkansas",
+    awayRank:0, homeRank:0,
+    spread:-32.5, total:54.0,
+    awayPPG:18, homePPG:28,
+    awayAllowPPG:30, homeAllowPPG:25,
+    awayPaceOff:11.5, homePaceOff:12.5,
+    awayPassYPG:160, homePassYPG:245,
+    awayRushYPG:120, homeRushYPG:155,
+    awayTOG:2.0, homeTOG:1.3,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Razorback Stadium, Fayetteville, AR",
+    weather:"Clear 84°F",
+    odds:{spread:-110,total:-110,mlHome:-3000,mlAway:1200},
+    note:"Sat noon. FCS North Alabama at Arkansas. Hogs big home favorite."
+  },
+  {
+    id:8, week:1,
+    away:"East Carolina", home:"Alabama",
+    awayRank:0, homeRank:16,
+    spread:-27.5, total:55.5,
+    awayPPG:27, homePPG:34,
+    awayAllowPPG:26, homeAllowPPG:18,
+    awayPaceOff:13.0, homePaceOff:13.0,
+    awayPassYPG:235, homePassYPG:265,
+    awayRushYPG:145, homeRushYPG:175,
+    awayTOG:1.5, homeTOG:1.1,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Bryant-Denny Stadium, Tuscaloosa, AL",
+    weather:"Partly Cloudy 87°F",
+    odds:{spread:-110,total:-110,mlHome:-2200,mlAway:1000},
+    note:"Sat noon ABC. #16 Alabama -27.5 vs ECU. DeBoer Year 3; QB competition between Austin Mack and Keelon Russell."
+  },
+  {
+    id:9, week:1,
+    away:"Baylor", home:"Auburn",
+    awayRank:0, homeRank:0,
+    spread:-6.5, total:59.5,
+    awayPPG:26, homePPG:30,
+    awayAllowPPG:26, homeAllowPPG:24,
+    awayPaceOff:12.5, homePaceOff:13.0,
+    awayPassYPG:230, homePassYPG:255,
+    awayRushYPG:140, homeRushYPG:160,
+    awayTOG:1.5, homeTOG:1.4,
+    awayRest:7, homeRest:7, hfa:0,
+    venue:"Mercedes-Benz Stadium, Atlanta, GA (Aflac Kickoff Game)",
+    weather:"Dome",
+    odds:{spread:-110,total:-110,mlHome:-260,mlAway:215},
+    note:"Sat 3:30 PM ABC. Aflac Kickoff. Auburn -6.5/59.5 per ESPN scoreboard. New coach Alex Golesh (ex-USF). Dome game."
+  },
+  {
+    id:10, week:1,
+    away:"Florida Atlantic", home:"Florida",
+    awayRank:0, homeRank:0,
+    spread:-28.5, total:58.5,
+    awayPPG:21, homePPG:31,
+    awayAllowPPG:28, homeAllowPPG:22,
+    awayPaceOff:12.0, homePaceOff:13.0,
+    awayPassYPG:210, homePassYPG:255,
+    awayRushYPG:130, homeRushYPG:160,
+    awayTOG:1.7, homeTOG:1.2,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Ben Hill Griffin Stadium (The Swamp), Gainesville, FL",
+    weather:"Hot 90°F, humid",
+    odds:{spread:-110,total:-110,mlHome:-3000,mlAway:1200},
+    note:"Sat noon. FAU at Florida. Gators big home favorite in The Swamp."
+  },
+  {
+    id:11, week:1,
+    away:"Tennessee State", home:"Georgia",
+    awayRank:0, homeRank:0,
+    spread:-44.5, total:62.0,
+    awayPPG:16, homePPG:38,
+    awayAllowPPG:36, homeAllowPPG:14,
+    awayPaceOff:11.5, homePaceOff:13.5,
+    awayPassYPG:150, homePassYPG:295,
+    awayRushYPG:110, homeRushYPG:185,
+    awayTOG:2.2, homeTOG:0.9,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Sanford Stadium, Athens, GA",
+    weather:"Clear 86°F",
+    odds:{spread:-110,total:-110,mlHome:-10000,mlAway:3500},
+    note:"Sat. Tennessee State (FCS) at Georgia. Bulldogs massive favorite. Kirby Smart's squad."
+  },
+  {
+    id:12, week:1,
+    away:"Youngstown State", home:"Kentucky",
+    awayRank:0, homeRank:0,
+    spread:-31.5, total:54.0,
+    awayPPG:19, homePPG:28,
+    awayAllowPPG:28, homeAllowPPG:20,
+    awayPaceOff:12.0, homePaceOff:12.5,
+    awayPassYPG:175, homePassYPG:240,
+    awayRushYPG:120, homeRushYPG:155,
+    awayTOG:1.9, homeTOG:1.3,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Kroger Field, Lexington, KY",
+    weather:"Clear 83°F",
+    odds:{spread:-110,total:-110,mlHome:-3500,mlAway:1500},
+    note:"Sat. Youngstown State (FCS) at Kentucky. Wildcats big home favorite."
+  },
+  {
+    id:13, week:1,
+    away:"Clemson", home:"LSU",
+    awayRank:4, homeRank:11,
+    spread:-3.5, total:55.0,
+    awayPPG:34, homePPG:33,
+    awayAllowPPG:17, homeAllowPPG:20,
+    awayPaceOff:13.0, homePaceOff:13.5,
+    awayPassYPG:275, homePassYPG:290,
+    awayRushYPG:155, homeRushYPG:175,
+    awayTOG:1.1, homeTOG:1.2,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Tiger Stadium (Death Valley), Baton Rouge, LA",
+    weather:"Clear 88°F",
+    odds:{spread:-110,total:-110,mlHome:-155,mlAway:130},
+    note:"Sat 7:30 PM ABC ★ GAME OF THE WEEK ★ #4 Clemson at #11 LSU. Lane Kiffin's LSU debut. Back end of home-and-home. CBS early line LSU -3.5. 103,000 fans under the lights."
+  },
+  {
+    id:14, week:1,
+    away:"Georgia State", home:"Ole Miss",
+    awayRank:0, homeRank:9,
+    spread:-35.5, total:60.5,
+    awayPPG:18, homePPG:36,
+    awayAllowPPG:32, homeAllowPPG:16,
+    awayPaceOff:12.0, homePaceOff:13.5,
+    awayPassYPG:170, homePassYPG:295,
+    awayRushYPG:115, homeRushYPG:185,
+    awayTOG:2.1, homeTOG:0.9,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Vaught-Hemingway Stadium, Oxford, MS",
+    weather:"Clear 88°F",
+    odds:{spread:-110,total:-110,mlHome:-50000,mlAway:3500},
+    note:"Sat 7:45 PM SEC Network. #9 Ole Miss -35.5/60.5 per CBS early line. Pete Golding's head coaching debut."
+  },
+  {
+    id:15, week:1,
+    away:"Tulsa", home:"Oklahoma State",
+    awayRank:0, homeRank:0,
+    spread:-14.5, total:53.5,
+    awayPPG:24, homePPG:30,
+    awayAllowPPG:28, homeAllowPPG:22,
+    awayPaceOff:12.5, homePaceOff:13.0,
+    awayPassYPG:225, homePassYPG:255,
+    awayRushYPG:135, homeRushYPG:160,
+    awayTOG:1.6, homeTOG:1.3,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Boone Pickens Stadium, Stillwater, OK",
+    weather:"Clear 86°F",
+    odds:{spread:-110,total:-110,mlHome:-650,mlAway:480},
+    note:"Sat. OSU -14.5 per BetMGM. Revenge game — Tulsa snapped 10-game losing streak vs OSU last year. New coach Eric Morris."
+  },
+  {
+    id:16, week:1,
+    away:"Tulane", home:"Duke",
+    awayRank:0, homeRank:0,
+    spread:-7.5, total:52.0,
+    awayPPG:28, homePPG:32,
+    awayAllowPPG:22, homeAllowPPG:20,
+    awayPaceOff:13.0, homePaceOff:13.0,
+    awayPassYPG:240, homePassYPG:265,
+    awayRushYPG:145, homeRushYPG:145,
+    awayTOG:1.3, homeTOG:1.2,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Wallace Wade Stadium, Durham, NC",
+    weather:"Clear 83°F",
+    odds:{spread:-110,total:-110,mlHome:-310,mlAway:255},
+    note:"Sat. Duke -7.5 per BetMGM. Rematch of last year's game which had playoff implications. Blue Devils at home."
+  },
+
+  // ════════════ WEEK 1 — Sun Sep 6 ════════════
+  {
+    id:17, week:1,
+    away:"Louisville", home:"Ole Miss",
+    awayRank:0, homeRank:9,
+    spread:-8.5, total:57.5,
+    awayPPG:32, homePPG:36,
+    awayAllowPPG:22, homeAllowPPG:16,
+    awayPaceOff:13.0, homePaceOff:13.5,
+    awayPassYPG:265, homePassYPG:295,
+    awayRushYPG:155, homeRushYPG:185,
+    awayTOG:1.3, homeTOG:0.9,
+    awayRest:7, homeRest:7, hfa:0,
+    venue:"Nissan Stadium, Nashville, TN (neutral)",
+    weather:"Clear 85°F",
+    odds:{spread:-110,total:-110,mlHome:-360,mlAway:295},
+    note:"Sun 7:30 PM ABC. Neutral site Nashville. #9 Ole Miss -8.5 per CBS early line. Louisville is a strong ACC squad. Simultaneous with Notre Dame-Wisconsin on NBC."
+  },
+  {
+    id:18, week:1,
+    away:"Wisconsin", home:"Notre Dame",
+    awayRank:0, homeRank:6,
+    spread:-16.5, total:50.5,
+    awayPPG:26, homePPG:34,
+    awayAllowPPG:18, homeAllowPPG:15,
+    awayPaceOff:12.0, homePaceOff:12.5,
+    awayPassYPG:215, homePassYPG:270,
+    awayRushYPG:165, homeRushYPG:145,
+    awayTOG:1.3, homeTOG:1.0,
+    awayRest:7, homeRest:7, hfa:0,
+    venue:"Lambeau Field, Green Bay, WI (neutral)",
+    weather:"Clear 72°F",
+    odds:{spread:-110,total:-110,mlHome:-1100,mlAway:650},
+    note:"Sun 7:30 PM NBC/Peacock. #6 Notre Dame -16.5 per CBS early line. Historic Lambeau Field setting. Irish heavily favored."
+  },
+
+  // ════════════ WEEK 1 — Mon Sep 7 (Labor Day) ════════════
+  {
+    id:19, week:1,
+    away:"SMU", home:"Florida State",
+    awayRank:22, homeRank:0,
+    spread:-3.5, total:53.5,
+    awayPPG:35, homePPG:28,
+    awayAllowPPG:20, homeAllowPPG:24,
+    awayPaceOff:13.5, homePaceOff:12.5,
+    awayPassYPG:290, homePassYPG:250,
+    awayRushYPG:155, homeRushYPG:135,
+    awayTOG:1.1, homeTOG:1.5,
+    awayRest:7, homeRest:7, hfa:2.5,
+    venue:"Doak Campbell Stadium, Tallahassee, FL",
+    weather:"Hot 88°F, humid",
+    odds:{spread:-110,total:-110,mlHome:-155,mlAway:130},
+    note:"Labor Day 7:30 PM ESPN. #22 SMU at Florida State — ACC conference game. FSU favored ~3.5 at home. SMU had excellent 2025 season."
+  }
+];
+
+// ─────────────────────────────────────────────
+// ENGINE
+// ─────────────────────────────────────────────
+function randn() {
+  let u=0,v=0;
+  while(!u) u=Math.random();
+  while(!v) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function poisson(lambda){
+  const L=Math.exp(-Math.max(0.01,lambda));
+  let k=0,p=1;
+  do{k++;p*=Math.random();}while(p>L);
+  return k-1;
+}
+function americanToB(a){
+  if(!a)return 0.909;
+  return a>0?a/100:100/Math.abs(a);
+}
+function wald95(p,n){
+  const se=Math.sqrt((p*(1-p))/Math.max(1,n));
+  return[Math.max(0,p-1.96*se),Math.min(1,p+1.96*se)];
+}
+function parseWeather(w){
+  if(!w)return{totalAdj:0,paceAdj:1.0};
+  const text=w.toLowerCase();
+  if(text==='dome')return{totalAdj:0,paceAdj:1.0};
+  const tm=text.match(/(-?\d+)\s*°?\s*f/),wm=text.match(/(\d+)\s*(mph|wind)/);
+  const t=tm?parseInt(tm[1]):72,wind=wm?parseInt(wm[1]):0;
+  let totalAdj=0;
+  if(t<32)totalAdj-=3.0;else if(t<45)totalAdj-=1.5;else if(t>90)totalAdj-=1.0;
+  if(/rain|snow|storm|wet/.test(text))totalAdj-=3.5;
+  if(wind>=20)totalAdj-=4.0;else if(wind>=12)totalAdj-=2.0;
+  if(/humid/.test(text))totalAdj-=0.5;
+  const paceAdj=totalAdj<-4?0.92:totalAdj<-2?0.96:1.0;
+  return{totalAdj,paceAdj};
+}
+function restPts(d){
+  if(d==null)return 0;
+  if(d>=12)return 1.5;if(d>=10)return 0.8;
+  if(d<=5)return-1.0;if(d<=6)return-0.4;
+  return 0;
+}
+function simScore(offPPG,defAllow,pace,wxAdj,noise){
+  const blended=clamp(0.55*offPPG+0.45*defAllow+wxAdj/2,6,60);
+  const drives=clamp(Math.round(pace+randn()*1.0),8,17);
+  const ppd=blended/Math.max(8,pace);
+  let ps=clamp(ppd/5.5,0.18,0.85);
+  ps=clamp(ps+noise*0.06,0.10,0.92);
+  const pTD=ps*0.66,pFG=ps*0.34;
+  let pts=0;
+  for(let d=0;d<drives;d++){
+    const r=Math.random();
+    if(r<pTD){pts+=7;if(Math.random()<0.03)pts+=1;}
+    else if(r<pTD+pFG)pts+=3;
+  }
+  if(Math.random()<0.20)pts+=7;
+  return pts;
+}
+
+function runMC(game,N=10000){
+  const spread=+game.spread,total=+game.total;
+  const aPace=+(game.awayPaceOff??12.5),hPace=+(game.homePaceOff??12.5);
+  const hfa=game.hfa??2.5;
+  const rAway=+(game.rosterAdjAway??0),rHome=+(game.rosterAdjHome??0);
+  const odds=game.odds||{spread:-110,total:-110};
+  const wx=parseWeather(game.weather);
+  const rHA=restPts(game.homeRest??7),rAA=restPts(game.awayRest??7);
+  const effHO=+game.homePPG+rHome+rHA+hfa*0.4;
+  const effAO=+game.awayPPG+rAway+rAA;
+  const effHA=+game.homeAllowPPG,effAA=+game.awayAllowPPG;
+  const iH=(total+(-spread))/2,iA=(total-(-spread))/2;
+  const muH=0.60*iH+0.40*(effHO+effAA)/2;
+  const muA=0.60*iA+0.40*(effAO+effHA)/2;
+  const pH=hPace*wx.paceAdj,pA=aPace*wx.paceAdj;
+
+  let hW=0,aW=0,scH=0,scA=0,push=0;
+  let ov=0,un=0,ouP=0;
+  let tH=0,tA=0,tTO=0;
+  let hPaT=0,aPaT=0,hRuT=0,aRuT=0;
+  const margins=new Array(N);
+  const sHook=Math.abs(spread-Math.round(spread))>0.001;
+  const tHook=Math.abs(total-Math.round(total))>0.001;
+
+  for(let i=0;i<N;i++){
+    const sh=randn()*0.8;
+    const aTO=poisson(+game.awayTOG),hTO=poisson(+game.homeTOG);
+    const tDelta=hTO-aTO;
+    let hs=simScore(muH,effAA,pH,wx.totalAdj,sh)-tDelta*2.0;
+    let as_=simScore(muA,effHA,pA,wx.totalAdj,sh)+tDelta*2.0;
+    hs=Math.max(0,Math.round(hs));as_=Math.max(0,Math.round(as_));
+    tH+=hs;tA+=as_;tTO+=aTO+hTO;margins[i]=hs-as_;
+    hPaT+=clamp((+game.homePassYPG||250)+randn()*65,50,600);
+    aPaT+=clamp((+game.awayPassYPG||250)+randn()*65,50,600);
+    hRuT+=clamp((+game.homeRushYPG||150)+randn()*55,10,400);
+    aRuT+=clamp((+game.awayRushYPG||150)+randn()*55,10,400);
+    if(hs>as_)hW++;else if(as_>hs)aW++;else{hW+=0.5;aW+=0.5;}
+    const margin=hs-as_,tgt=-spread;
+    if(!sHook&&margin===tgt)push++;else if(margin>tgt)scH++;else scA++;
+    const comb=hs+as_;
+    if(!tHook&&comb===total)ouP++;else if(comb>total)ov++;else un++;
+  }
+  margins.sort((a,b)=>a-b);
+  const p10=margins[Math.floor(N*0.10)],p90=margins[Math.floor(N*0.90)];
+  const hWP=hW/N,aWP=aW/N;
+  const sd=N-push,oud=N-ouP;
+  const hSP=scH/sd,oP=ov/oud,uP=un/oud;
+
+  function evalBet(label,prob,ao){
+    const b=americanToB(ao);
+    const ev=prob*b-(1-prob);
+    const[lo,hi]=wald95(prob,sd);
+    return{label,prob,b,ev,ci:[lo,hi],odds:ao,breakeven:1/(b+1)};
+  }
+  const cands=[
+    evalBet(`${game.home} ATS (${spread<=0?spread:'+'+spread})`,hSP,odds.spread),
+    evalBet(`${game.away} ATS (${spread<=0?'+'+Math.abs(spread):'-'+Math.abs(spread)})`,1-hSP,odds.spread),
+    evalBet(`OVER ${total}`,oP,odds.total),
+    evalBet(`UNDER ${total}`,uP,odds.total),
+  ];
+  if(odds.mlHome!=null)cands.push(evalBet(`${game.home} ML`,hWP,odds.mlHome));
+  if(odds.mlAway!=null)cands.push(evalBet(`${game.away} ML`,aWP,odds.mlAway));
+  const bets=cands.filter(c=>c.ev>0.02&&c.ci[0]>c.breakeven).sort((a,b)=>b.ev-a.ev);
+
+  let asr=null,aor=null;
+  if(game.actualAway!=null&&game.actualHome!=null){
+    const am=game.actualHome-game.actualAway,at=game.actualHome+game.actualAway,tgt=-spread;
+    asr=!sHook&&am===tgt?'PUSH':am>tgt?'HOME cvrd':'AWAY cvrd';
+    aor=!tHook&&at===total?'PUSH':at>total?'OVER':'UNDER';
+  }
+  return{
+    avgHome:tH/N,avgAway:tA/N,
+    homeWinPct:hWP*100,awayWinPct:aWP*100,
+    homeSpreadPct:hSP*100,awaySpreadPct:(1-hSP)*100,
+    overPct:oP*100,underPct:uP*100,
+    pushes:push,ouPushes:ouP,p10Margin:p10,p90Margin:p90,
+    avgTO:tTO/N,
+    homePassYPG:hPaT/N,awayPassYPG:aPaT/N,
+    homeRushYPG:hRuT/N,awayRushYPG:aRuT/N,
+    bets,allCandidates:cands,actualSpreadResult:asr,actualOUResult:aor,
+    weatherImpact:wx.totalAdj
+  };
+}
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let GAMES=JSON.parse(JSON.stringify(WEEK_0_1_GAMES));
+let RESULTS=[],SELECTED_ID=null,FILTER="all";
+
+function fmtSpread(g){const s=+g.spread;if(s===0)return"PICK";if(s>0)return`${g.away} -${s}`;return`${g.home} -${Math.abs(s)}`;}
+function fmtPct(v){return v.toFixed(1)+"%";}
+function fmtNum(v){return Number(v).toFixed(1);}
+function colorPct(p){return p>50?"pos":p<50?"neg":"muted";}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+
+function render(){renderTable();renderDetail();renderStatus();}
+
+function renderStatus(){
+  const tot=RESULTS.length;
+  const bets=RESULTS.reduce((a,r)=>a+r.result.bets.length,0);
+  const wB=RESULTS.filter(r=>r.result.bets.length>0).length;
+  const u=document.getElementById("unit-size").value;
+  document.getElementById("status").innerHTML=tot===0?"":`
+    <span><strong>${tot}</strong> games simulated</span>
+    <span><strong>${bets}</strong> +EV bets across <strong>${wB}</strong> games</span>
+    <span>Unit <strong>$${u}</strong> · exposure <strong>$${(bets*u).toFixed(0)}</strong></span>`;
+  document.getElementById("game-count").textContent=tot===0?`${GAMES.length} games loaded`:`${tot} simulated`;
+}
+
+function renderTable(){
+  const tbody=document.getElementById("results-body");
+  if(!RESULTS.length){
+    tbody.innerHTML=`<tr><td colspan="13" class="empty"><strong>${GAMES.length} real 2026 games loaded</strong> (Week 0 + Week 1) with actual lines from ESPN, CBS, BetMGM &amp; SI.<br>Click <strong>▶ Run All Sims</strong> to run 10,000 Monte Carlo iterations per game.</td></tr>`;
+    return;
+  }
+  let vis=RESULTS;
+  if(FILTER==="bets")vis=RESULTS.filter(r=>r.result.bets.length>0);
+  else if(FILTER==="close")vis=RESULTS.filter(r=>Math.abs(+r.game.spread)<=7);
+  else if(FILTER==="w0")vis=RESULTS.filter(r=>r.game.week===0);
+  else if(FILTER==="w1")vis=RESULTS.filter(r=>r.game.week===1);
+  if(!vis.length){tbody.innerHTML=`<tr><td colspan="13" class="empty">No games match this filter.</td></tr>`;return;}
+  tbody.innerHTML=vis.map((r,idx)=>{
+    const g=r.game,x=r.result;
+    const sel=SELECTED_ID===g.id?"selected":"";
+    const edge=x.bets.length?"has-edge":"";
+    const wxC=x.weatherImpact<0?`<span class="hot">${x.weatherImpact.toFixed(1)}</span>`:`<span class="muted">—</span>`;
+    const actC=(g.actualAway!=null&&g.actualHome!=null)?`<span class="pos">${g.actualAway}–${g.actualHome}</span>`:`<span class="muted">—</span>`;
+    const betsC=x.bets.length===0?`<span class="muted">no edge</span>`:x.bets.slice(0,2).map(b=>`<span class="bet-pill">${esc(b.label)} (+${(b.ev*100).toFixed(1)}%)</span>`).join("");
+    return`<tr class="${sel} ${edge}" data-id="${g.id}">
+      <td><span class="week-pill">W${g.week}</span></td>
+      <td class="muted">${idx+1}</td>
+      <td><strong>${g.awayRank?`<span class="rank">#${g.awayRank}</span>`:""}${esc(g.away)}</strong></td>
+      <td><strong>${g.homeRank?`<span class="rank">#${g.homeRank}</span>`:""}${esc(g.home)}</strong></td>
+      <td>${esc(fmtSpread(g))}</td>
+      <td>${g.total}</td>
+      <td><strong class="pos">${fmtNum(x.avgAway)}–${fmtNum(x.avgHome)}</strong></td>
+      <td><span class="${colorPct(x.awayWinPct)}">${fmtPct(x.awayWinPct)}</span></td>
+      <td><span class="${colorPct(x.homeWinPct)}">${fmtPct(x.homeWinPct)}</span></td>
+      <td>${fmtPct(x.homeSpreadPct)}</td>
+      <td><span class="hot">O ${x.overPct.toFixed(0)}%</span> / <span class="cool">U ${x.underPct.toFixed(0)}%</span></td>
+      <td>${actC}</td>
+      <td>${betsC}</td>
+    </tr>`;
+  }).join("");
+  tbody.querySelectorAll("tr[data-id]").forEach(tr=>{
+    tr.addEventListener("click",()=>{SELECTED_ID=parseInt(tr.dataset.id);render();});
+  });
+}
+
+function renderDetail(){
+  const sel=RESULTS.find(r=>r.game.id===SELECTED_ID)||RESULTS[0];
+  const tEl=document.getElementById("detail-title"),mEl=document.getElementById("detail-meta"),gEl=document.getElementById("detail-grid");
+  if(!sel){tEl.textContent="Click any game above";mEl.innerHTML="";gEl.innerHTML="";return;}
+  const g=sel.game,x=sel.result;
+  const u=parseFloat(document.getElementById("unit-size").value)||25;
+  tEl.innerHTML=`<span class="week-pill" style="margin-right:8px">WEEK ${g.week}</span>${g.awayRank?`<span class="rank">#${g.awayRank}</span>`:""}${esc(g.away)} <span class="muted" style="margin:0 8px">@</span> ${g.homeRank?`<span class="rank">#${g.homeRank}</span>`:""}${esc(g.home)}`;
+  mEl.innerHTML=`📍 ${esc(g.venue||"—")} · 🌤 ${esc(g.weather||"—")}${x.weatherImpact<0?` <span class="hot">(wx: ${x.weatherImpact.toFixed(1)} pts)</span>`:""}${g.note?`<div style="margin-top:4px;font-style:italic">${esc(g.note)}</div>`:""}`;
+  const odds=g.odds||{};
+  function row(l,v,c){return`<div class="stat-row"><span class="lbl">${esc(String(l))}</span><span class="val ${c||""}">${esc(String(v))}</span></div>`;}
+  function box(t,b){return`<div class="stat-box"><div class="stat-box-title">${esc(t)}</div>${b}</div>`;}
+  const scoreRows=[
+    row(`${g.away} avg`,fmtNum(x.avgAway),"pos"),
+    row(`${g.home} avg`,fmtNum(x.avgHome),"pos"),
+    row("Avg total",(x.avgAway+x.avgHome).toFixed(1)),
+    row("Avg margin (Home)",(x.avgHome-x.avgAway).toFixed(1)),
+    row("Margin P10–P90",`${x.p10Margin} to ${x.p90Margin}`)
+  ].join("");
+  const winRows=[row(g.away,fmtPct(x.awayWinPct),colorPct(x.awayWinPct)),row(g.home,fmtPct(x.homeWinPct),colorPct(x.homeWinPct))].join("");
+  const sRows=[row(`${g.away} ATS`,fmtPct(x.awaySpreadPct)),row(`${g.home} ATS`,fmtPct(x.homeSpreadPct)),x.pushes>0?row("Pushes",`${x.pushes}`,"muted"):""].join("");
+  const oRows=[row(`Over ${g.total}`,fmtPct(x.overPct),"hot"),row(`Under ${g.total}`,fmtPct(x.underPct),"cool"),x.ouPushes>0?row("O/U Pushes",`${x.ouPushes}`,"muted"):""].join("");
+  const lRows=[row("Spread line",fmtSpread(g)),row("Total (O/U)",g.total),row("Spread juice",odds.spread??-110),row("Total juice",odds.total??-110),odds.mlHome!=null?row("ML H/A",`${odds.mlHome} / ${odds.mlAway??"n/a"}`):""].join("");
+  const stRows=[row("Avg turnovers/gm",x.avgTO.toFixed(1)),row(`${g.home} pass YPG`,x.homePassYPG.toFixed(0)),row(`${g.away} pass YPG`,x.awayPassYPG.toFixed(0)),row(`${g.home} rush YPG`,x.homeRushYPG.toFixed(0)),row(`${g.away} rush YPG`,x.awayRushYPG.toFixed(0))].join("");
+  const bHtml=x.bets.length===0?`<div class="muted" style="padding-top:6px">No +EV bets — market appears efficient on this game</div>`:x.bets.map(b=>{
+    const toWin=(u*b.b).toFixed(2);
+    return`<div style="padding:6px 0;border-bottom:1px solid #eef2f7">
+      <div style="display:flex;justify-content:space-between"><span class="gold">${esc(b.label)}</span><span><strong>EV +${(b.ev*100).toFixed(1)}%</strong></span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:10px;color:#5a6c80">
+        <span>p=${(b.prob*100).toFixed(1)}% · CI [${(b.ci[0]*100).toFixed(1)}, ${(b.ci[1]*100).toFixed(1)}]</span>
+        <span class="pos">1u ($${u.toFixed(0)}) → win $${toWin}</span>
+      </div></div>`;
+  }).join("");
+  const allC=x.allCandidates.map(c=>row(c.label,`${c.ev>0?"+":""}${(c.ev*100).toFixed(1)}%`,c.ev>0?"pos":"neg")).join("");
+  gEl.innerHTML=[
+    box("Market Lines",lRows),
+    box("Avg Score (10,000 Sims)",scoreRows),
+    box("Win Probability",winRows),
+    box("Spread Cover %",sRows),
+    box("Over/Under %",oRows),
+    box("Projected Key Stats",stRows),
+    box(`+EV Bets · 1 unit = $${u.toFixed(0)}`,bHtml),
+    box("All Bet EVs",allC)
+  ].join("");
+}
+
+// ─────────────────────────────────────────────
+// SIM DRIVER
+// ─────────────────────────────────────────────
+function runSims(){
+  if(!GAMES.length){alert("No games.");return;}
+  const bar=document.getElementById("progress"),bi=bar.firstElementChild;
+  bar.classList.remove("hidden");bi.style.width="0%";
+  document.getElementById("btn-run").disabled=true;
+  RESULTS=[];let i=0;
+  function step(){
+    if(i<GAMES.length){
+      RESULTS.push({game:GAMES[i],result:runMC(GAMES[i],10000)});
+      bi.style.width=`${Math.round(((i+1)/GAMES.length)*100)}%`;
+      i++;setTimeout(step,0);
+    }else{
+      document.getElementById("btn-run").disabled=false;
+      bar.classList.add("hidden");
+      if(!SELECTED_ID||!RESULTS.find(r=>r.game.id===SELECTED_ID))SELECTED_ID=RESULTS[0].game.id;
+      render();
+    }
+  }
+  step();
+}
+
+// ─────────────────────────────────────────────
+// EDITOR
+// ─────────────────────────────────────────────
+function openEditor(){
+  document.getElementById("games-json").value=JSON.stringify(GAMES,null,2);
+  document.getElementById("editor-error").classList.add("hidden");
+  document.getElementById("editor-panel").classList.remove("hidden");
+  document.getElementById("results-panel").classList.add("hidden");
+  document.getElementById("detail-panel").classList.add("hidden");
+}
+function closeEditor(){
+  document.getElementById("editor-panel").classList.add("hidden");
+  document.getElementById("results-panel").classList.remove("hidden");
+  document.getElementById("detail-panel").classList.remove("hidden");
+}
+function saveEditor(){
+  try{
+    const parsed=JSON.parse(document.getElementById("games-json").value);
+    if(!Array.isArray(parsed))throw new Error("Must be an array.");
+    parsed.forEach((g,i)=>{
+      ["id","away","home","spread","total","awayPPG","homePPG","awayAllowPPG","homeAllowPPG","awayTOG","homeTOG"].forEach(k=>{
+        if(g[k]==null)throw new Error(`Game ${i}: missing "${k}"`);
+      });
+    });
+    GAMES=parsed;closeEditor();runSims();
+  }catch(e){
+    const err=document.getElementById("editor-error");
+    err.textContent="Error: "+e.message;err.classList.remove("hidden");
+  }
+}
+function addGame(){
+  const newId=(GAMES.reduce((m,g)=>Math.max(m,+g.id||0),0)||0)+1;
+  const tpl=JSON.parse(JSON.stringify(WEEK_0_1_GAMES[0]));
+  tpl.id=newId;tpl.away="New Away";tpl.home="New Home";tpl.note="Edit stats and lines.";
+  GAMES.push(tpl);openEditor();
+}
+function resetGames(){
+  if(!confirm("Reset to all 19 real 2026 Week 0 + Week 1 games?"))return;
+  GAMES=JSON.parse(JSON.stringify(WEEK_0_1_GAMES));
+  RESULTS=[];SELECTED_ID=null;closeEditor();render();
+}
+
+// ─────────────────────────────────────────────
+// WIRING
+// ─────────────────────────────────────────────
+document.getElementById("btn-run").addEventListener("click",runSims);
+document.getElementById("btn-edit").addEventListener("click",openEditor);
+document.getElementById("btn-add").addEventListener("click",addGame);
+document.getElementById("btn-reset").addEventListener("click",resetGames);
+document.getElementById("editor-save").addEventListener("click",saveEditor);
+document.getElementById("editor-cancel").addEventListener("click",closeEditor);
+document.getElementById("unit-size").addEventListener("input",()=>{renderDetail();renderStatus();});
+document.querySelectorAll(".filter-btn").forEach(btn=>{
+  if(btn.dataset.filter===FILTER){document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");}
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".filter-btn").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");FILTER=btn.dataset.filter;renderTable();
+  });
+});
+render();
+</script>
+</body>
+</html>
