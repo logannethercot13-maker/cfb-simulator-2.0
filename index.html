@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CFB Simulator">
 <title>CFB 2026-27 Monte Carlo v3</title>
 <style>
 :root {
@@ -153,6 +157,69 @@ table.tracker-table td{padding:7px 10px;border-bottom:1px solid #f1f5f9;white-sp
 .sim-correct{color:var(--green);}
 .sim-wrong{color:var(--red);}
 .sim-na{color:var(--text3);}
+
+/* ── MOBILE / iOS SAFARI ── */
+@media (max-width: 768px) {
+  body { font-size: 12px; }
+  .wrap { padding: 10px 8px; }
+
+  /* Nav scrolls horizontally on small screens */
+  .nav {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 3px;
+  }
+  .nav-btn { padding: 8px 12px; font-size: 11px; white-space: nowrap; min-height: 36px; }
+
+  /* Controls stack vertically */
+  .controls { gap: 6px; }
+  .controls label { font-size: 9px; }
+  button { padding: 8px 12px; font-size: 11px; min-height: 36px; }
+  input[type=number] { width: 75px; font-size: 12px; padding: 7px 8px; min-height: 36px; }
+
+  /* Tables scroll horizontally */
+  .table-wrap { -webkit-overflow-scrolling: touch; }
+  table.results th { font-size: 9px; padding: 6px 7px; }
+  table.results td { padding: 6px 7px; font-size: 11px; }
+  table.tracker-table th { font-size: 9px; padding: 6px 7px; }
+  table.tracker-table td { padding: 6px 7px; font-size: 11px; }
+
+  /* KPI boxes stack 2 per row on mobile */
+  .tracker-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi-box { padding: 10px 10px; }
+  .kpi-val { font-size: 18px; }
+  .kpi-label { font-size: 9px; }
+
+  /* Stat grid goes single column */
+  .stat-grid { grid-template-columns: 1fr; }
+
+  /* Kelly panel stacks */
+  #kelly-panel { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* Header */
+  .hdr { padding: 10px 12px; }
+  .hdr h1 { font-size: 15px; }
+  .subhdr { font-size: 10px; }
+  .hdr-top { gap: 6px; }
+
+  /* Filter buttons wrap nicely */
+  .filter-btn { padding: 7px 10px; font-size: 10px; }
+
+  /* Bet detail rows */
+  .inline-flex { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .bet-detail-row { padding: 10px 0; }
+
+  /* Archive week tabs scroll */
+  #archive-week-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; width: 100%; padding-bottom: 4px; }
+  .arch-week-btn { white-space: nowrap; }
+
+  /* Archive game rows collapse to fewer columns */
+  .arch-game-row { grid-template-columns: auto 1fr auto auto; gap: 6px; font-size: 10.5px; }
+  .arch-header { font-size: 8.5px; }
+}
 </style>
 </head>
 <body>
@@ -602,6 +669,32 @@ function simulateGame(game,N=10000){
 }
 
 // ═══════════════════════════════════════════════════════════
+// IOS SAFARI COMPATIBILITY
+// Polyfill for older iOS versions that may not support
+// newer JS features. Also detects private browsing mode
+// where localStorage is disabled.
+// ═══════════════════════════════════════════════════════════
+const STORAGE_AVAILABLE=(()=>{
+  try{const k='__test__';localStorage.setItem(k,k);localStorage.removeItem(k);return true;}
+  catch(e){return false;}
+})();
+
+// Safe localStorage wrappers — silently fail if unavailable (iOS private mode)
+const LS={
+  get(k){if(!STORAGE_AVAILABLE)return null;try{return localStorage.getItem(k);}catch(e){return null;}},
+  set(k,v){if(!STORAGE_AVAILABLE)return;try{localStorage.setItem(k,v);}catch(e){}},
+  remove(k){if(!STORAGE_AVAILABLE)return;try{localStorage.removeItem(k);}catch(e){}}
+};
+
+// Show a banner if storage is unavailable (private browsing)
+if(!STORAGE_AVAILABLE){
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;top:0;left:0;right:0;z-index:9999;background:#b45309;color:#fff;text-align:center;padding:8px 14px;font-size:12px;font-weight:700;';
+  banner.textContent='⚠️ Private browsing detected — bet log and archive won\'t be saved between sessions. Open in regular Safari to enable saving.';
+  document.body.prepend(banner);
+}
+
+// ═══════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════
 let GAMES=JSON.parse(JSON.stringify(DEFAULT_GAMES));
@@ -610,10 +703,10 @@ let RESULTS=[],SELECTED_ID=null,FILTER="all";
 // Persistent storage keys
 const SK_GAMES='cfb_v3_games',SK_BETS='cfb_v3_bets';
 
-function loadGames(){try{const r=localStorage.getItem(SK_GAMES);if(r){const p=JSON.parse(r);if(Array.isArray(p)&&p.length)return p;}}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_GAMES));}
-function saveGames(g){try{localStorage.setItem(SK_GAMES,JSON.stringify(g));}catch(e){}}
-function loadBets(){try{const r=localStorage.getItem(SK_BETS);if(r)return JSON.parse(r);}catch(e){}return[];}
-function saveBets(b){try{localStorage.setItem(SK_BETS,JSON.stringify(b));}catch(e){}}
+function loadGames(){try{const r=LS.get(SK_GAMES);if(r){const p=JSON.parse(r);if(Array.isArray(p)&&p.length)return p;}}catch(e){}return JSON.parse(JSON.stringify(DEFAULT_GAMES));}
+function saveGames(g){try{LS.set(SK_GAMES,JSON.stringify(g));}catch(e){}}
+function loadBets(){try{const r=LS.get(SK_BETS);if(r)return JSON.parse(r);}catch(e){}return[];}
+function saveBets(b){try{LS.set(SK_BETS,JSON.stringify(b));}catch(e){}}
 
 GAMES=loadGames();
 let BET_LOG=loadBets();
@@ -1226,11 +1319,11 @@ async function fetchScoresFromESPN(){
 const SK_ARCHIVE='cfb_v3_archive';
 
 function loadArchive(){
-  try{const r=localStorage.getItem(SK_ARCHIVE);if(r)return JSON.parse(r);}catch(e){}
+  try{const r=LS.get(SK_ARCHIVE);if(r)return JSON.parse(r);}catch(e){}
   return[];
 }
 function saveArchive(a){
-  try{localStorage.setItem(SK_ARCHIVE,JSON.stringify(a));}catch(e){
+  try{LS.set(SK_ARCHIVE,JSON.stringify(a));}catch(e){
     alert("Archive is getting large — your browser storage may be full. Consider clearing old data.");
   }
 }
